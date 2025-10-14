@@ -11,7 +11,13 @@ export async function middleware(request: NextRequest) {
    */
   if (pathname.startsWith("/ping")) {
     return new Response("pong", { status: 200 });
-  }
+  } 
+  
+  // allow Render health check to pass without auth
+   if (pathname.startsWith("/api/healthz")) {
+  return new Response("ok", { status: 200 });
+}
+
 
   if (pathname.startsWith("/api/auth")) {
     return NextResponse.next();
