@@ -1,44 +1,57 @@
-import { cookies } from "next/headers"
-import { Chat } from "@/components/chat"
-import { DataStreamHandler } from "@/components/data-stream-handler"
-import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models"
-import { generateUUID } from "@/lib/utils"
+'use client';
 
-export default async function Page() {
-  const id = generateUUID()
+import { useState } from 'react';
 
-  const cookieStore = await cookies()
-  const modelIdFromCookie = cookieStore.get("chat-model")
+export default function SafeChatPage() {
+  const [input, setInput] = useState('');
+  const [reply, setReply] = useState('');
+  const [err, setErr] = useState('');
 
-  if (!modelIdFromCookie) {
-    return (
-      <>
-        <Chat
-          autoResume={false}
-          id={id}
-          initialChatModel={DEFAULT_CHAT_MODEL}
-          initialMessages={[]}
-          initialVisibilityType="private"
-          isReadonly={false}
-          key={id}
-        />
-        <DataStreamHandler />
-      </>
-    )
+  async function send() {
+    setErr('');
+    setReply('');
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ messages: [{ role: 'user', content: input }] })
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || res.statusText);
+      const msg = json?.choices?.[0]?.message?.content ?? JSON.stringify(json);
+      setReply(String(msg));
+    } catch (e:any) {
+      setErr(e?.message || 'Request failed');
+    }
   }
 
   return (
-    <>
-      <Chat
-        autoResume={false}
-        id={id}
-        initialChatModel={modelIdFromCookie.value}
-        initialMessages={[]}
-        initialVisibilityType="private"
-        isReadonly={false}
-        key={id}
+    <main style={{maxWidth: 720, margin: '40px auto', padding: 16, fontFamily: 'ui-sans-serif, system-ui'}}>
+      <h1 style={{fontSize: 24, marginBottom: 12}}>Anon Chat (safe mode)</h1>
+      <p style={{opacity: .75, marginBottom: 16}}>
+        This is a temporary minimal UI to verify the API works. Type below and press Send.
+      </p>
+
+      <textarea
+        style={{width: '100%', minHeight: 120, padding: 8}}
+        placeholder="Say hi…"
+        value={input}
+        onChange={e => setInput(e.target.value)}
       />
-      <DataStreamHandler />
-    </>
-  )
+
+      <div style={{marginTop: 12, display: 'flex', gap: 8}}>
+        <button onClick={send} style={{padding: '8px 12px', cursor: 'pointer'}}>Send</button>
+        <button onClick={() => {setInput(''); setReply(''); setErr('');}} style={{padding: '8px 12px'}}>Clear</button>
+      </div>
+
+      {reply && (
+        <pre style={{whiteSpace: 'pre-wrap', marginTop: 16, padding: 12, background: '#111', color: '#eee', borderRadius: 8}}>
+{reply}
+        </pre>
+      )}
+      {err && (
+        <div style={{marginTop: 16, color: 'crimson'}}>Error: {err}</div>
+      )}
+    </main>
+  );
 }
