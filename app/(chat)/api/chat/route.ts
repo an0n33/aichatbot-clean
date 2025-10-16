@@ -52,3 +52,8 @@ export async function POST(req: NextRequest) {
 export async function GET() {
   return Response.json({ ok: true }, { status: 200 });
 }
+
+// Safe fallback so stream route import doesn't explode in production
+export function getStreamContext() {
+  return {};
+}

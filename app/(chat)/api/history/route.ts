@@ -1,4 +1,3 @@
-// app/(chat)/api/history/route.ts
 export async function GET() {
   return Response.json(
     { items: [], cursor: null },
