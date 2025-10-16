@@ -29,13 +29,10 @@ export async function middleware(request: NextRequest) {
     secureCookie: !isDevelopmentEnvironment,
   });
 
-  if (!token) {
-    const redirectUrl = encodeURIComponent(request.url);
-
-    return NextResponse.redirect(
-      new URL(`/api/auth/guest?redirectUrl=${redirectUrl}`, request.url)
-    );
-  }
+// Allow anonymous users (no token) to access the app
+if (!token) {
+  return NextResponse.next();
+}
 
   const isGuest = guestRegex.test(token?.email ?? "");
 
